@@ -6,39 +6,588 @@
 <meta name="theme-color" content="#101525">
 <meta name="description" content="DumboHumanizer - humanize your writing and check its AI score.">
 <link rel="icon" href="icon.png" type="image/png">
-<link rel="apple-touch-icon" href="icon.png">
 <title>DumboHumanizer 2.0</title>
 <style>
 :root{--bg:#0b1020;--panel2:#19243c;--text:#f3f5fc;--muted:#9caac3;--accent:#818cf8;--border:#2b3853;--green:#4ade80;--yellow:#facc15;--red:#f87171}
 *{box-sizing:border-box}
-body{margin:0;padding:24px 15px 40px;background:radial-gradient(ellipse at top,#1b2850,var(--bg) 65%);color:var(--text);font-family:system-ui,-apple-system,Arial,sans-serif}
+body{margin:0;padding:24px 15px 40px;background:#0b1020;color:var(--text);font-family:system-ui,-apple-system,Arial,sans-serif}
 .app{max-width:850px;margin:auto}
 header{text-align:center;padding:15px 0 25px}
-.logo{display:inline-block;width:58px;height:58px;line-height:58px;border-radius:18px;background:linear-gradient(135deg,#818cf8,#c084fc);color:#101525;font-size:28px;font-weight:900}
+.logo{display:inline-block;width:58px;height:58px;line-height:58px;border-radius:18px;background:#818cf8;color:#101525;font-size:28px;font-weight:900}
 h1{font-size:34px;margin:12px 0 5px}
 h1 span{color:#a5b4fc}
 .subtitle{color:var(--muted);margin:0;font-size:14px}
-.panel{background:rgba(19,27,48,.96);border:1px solid var(--border);border-radius:18px;padding:17px;margin-bottom:16px}
+.panel{background:#131b30;border:1px solid var(--border);border-radius:18px;padding:17px;margin-bottom:16px}
 .topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 label{font-size:14px;font-weight:700}
 .counter{color:var(--muted);font-size:12px}
-textarea{width:100%;min-height:190px;padding:15px;border:1px solid var(--border);border-radius:12px;outline:none;resize:vertical;background:#0c1325;color:var(--text);font-family:inherit;font-size:15px;line-height:1.75}
-textarea:focus,select:focus{border-color:var(--accent)}
+textarea{width:100%;min-height:190px;padding:15px;border:1px solid var(--border);border-radius:12px;background:#0c1325;color:var(--text);font-family:inherit;font-size:15px;line-height:1.75}
+select{width:100%;padding:12px;color:var(--text);background:#0c1325;border:1px solid var(--border);border-radius:10px;font-size:14px}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:15px 0}
 .control label{display:block;margin-bottom:7px}
-select{width:100%;padding:12px;color:var(--text);background:#0c1325;border:1px solid var(--border);border-radius:10px;font-size:14px}
 .checkrow{display:flex;align-items:center;gap:9px;color:#d3daeb;font-size:13px;font-weight:400;margin:15px 0}
-.checkrow input{width:17px;height:17px}
-button{padding:12px 15px;border:0;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;-webkit-tap-highlight-color:transparent}
+button{padding:12px 15px;border:0;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px;color:var(--text);background:var(--panel2);border:1px solid var(--border)}
 button:disabled{opacity:.6;cursor:wait}
-.primary{width:100%;color:#11152b;background:linear-gradient(100deg,#a5b4fc,#c4b5fd);font-size:16px;margin-top:4px}
-.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+.primary{width:100%;color:#11152b;background:#a5b4fc;border:0;font-size:16px;margin-top:4px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .actions button{flex:1;min-width:105px}
 .progress{display:none;margin-top:14px}
 .progress.show{display:block}
 .bar{height:8px;background:#0c1325;border:1px solid var(--border);border-radius:999px;overflow:hidden}
-.fill{height:100%;width:0%;background:linear-gradient(90deg,#818cf8,#c084fc);transition:width .2s}
+.fill{height:100%;width:0%;background:#818cf8;transition:width .2s}
 .ptext{color:var(--muted);font-size:12px;margin-top:6px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:13px}
-.stat{padding:12px 8px;backgr
+.stat{padding:12px 8px;background:#0c1325;border:1px solid var(--border);border-radius:11px;text-align:center}
+.stat strong{display:block;font-size:20px;color:#c4b5fd}
+.stat span{font-size:11px;color:var(--muted)}
+#status{font-size:13px;color:var(--green);margin:12px 0 0;min-height:1.2em;padding:8px 10px;border-radius:8px;word-wrap:break-word}
+#status.error{color:var(--red);background:rgba(248,113,113,.12)}
+#status.ok{background:rgba(74,222,128,.12)}
+.score{display:flex;align-items:baseline;gap:10px;margin-top:6px}
+.score strong{font-size:34px;color:#c4b5fd}
+.score .lbl{font-size:14px;font-weight:700}
+.meter{height:10px;background:#0c1325;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:10px}
+.meterfill{height:100%;width:0%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));transition:width .4s}
+.details{margin:12px 0 0;padding:0;list-style:none;color:var(--muted);font-size:13px;line-height:1.7}
+.details li{padding:4px 0;border-bottom:1px dashed var(--border)}
+.disclaimer{color:var(--muted);font-size:12px;line-height:1.6;margin:12px 0 0}
+.note{color:var(--muted);font-size:12px;text-align:center;margin-top:14px}
+footer{text-align:center;color:#71809b;font-size:12px;padding:15px}
+@media (max-width:480px){.controls{grid-template-columns:1fr}.stat strong{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">D</div>
+    <h1>Dumbo<span>Humanizer</span></h1>
+    <p class="subtitle">Make your writing clearer, more natural and easier to read.</p>
+  </header>
+
+  <section class="panel">
+    <div class="topline">
+      <label for="input">Your original text</label>
+      <span class="counter" id="inputCount">0 words</span>
+    </div>
+    <textarea id="input" placeholder="Paste your text here..."></textarea>
+
+    <div class="controls">
+      <div class="control">
+        <label for="style">Writing style</label>
+        <select id="style">
+          <option value="natural">Natural and clear</option>
+          <option value="simple">Simple English</option>
+          <option value="conversation">Conversational</option>
+          <option value="professional">Professional</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="strength">Editing strength</label>
+        <select id="strength">
+          <option value="light">Light: minimal changes</option>
+          <option value="medium" selected>Medium: balanced editing</option>
+          <option value="strong">Strong: more phrase editing</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="checkrow">
+      <input type="checkbox" id="contractions" checked>
+      Use natural contractions where appropriate
+    </label>
+
+    <button class="primary" id="rewriteBtn">✨ Humanize</button>
+
+    <div class="progress" id="progress1">
+      <div class="bar"><div class="fill" id="fill1"></div></div>
+      <div class="ptext" id="ptext1"></div>
+    </div>
+
+    <div class="actions">
+      <button id="sampleBtn">Try sample</button>
+      <button id="clearBtn">Clear all</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="topline">
+      <label for="output">Humanized result</label>
+      <span class="counter" id="outputCount">0 words</span>
+    </div>
+    <textarea id="output" placeholder="Your humanized text will appear here..."></textarea>
+
+    <div class="stats">
+      <div class="stat"><strong id="changes">0</strong><span>Edits made</span></div>
+      <div class="stat"><strong id="beforeWords">0</strong><span>Original words</span></div>
+      <div class="stat"><strong id="afterWords">0</strong><span>Edited words</span></div>
+    </div>
+
+    <div class="actions">
+      <button id="copyBtn">📋 Copy result</button>
+      <button id="againBtn">↻ Edit again</button>
+      <button id="saveBtn">⬇ Save TXT</button>
+    </div>
+
+    <p id="status" role="status">Loading...</p>
+  </section>
+
+  <section class="panel">
+    <div class="topline">
+      <label>AI detector</label>
+      <span class="counter" id="detectWords">Checks the result above</span>
+    </div>
+
+    <button id="detectBtn">🔍 Check AI score</button>
+
+    <div class="progress" id="progress2">
+      <div class="bar"><div class="fill" id="fill2"></div></div>
+      <div class="ptext" id="ptext2"></div>
+    </div>
+
+    <div class="score">
+      <strong id="aiScore">--</strong>
+      <span class="lbl" id="aiLabel">No check yet</span>
+    </div>
+    <div class="meter"><div class="meterfill" id="aiMeter"></div></div>
+
+    <ul class="details" id="aiDetails">
+      <li>Runs on this device. Your text is not uploaded anywhere.</li>
+    </ul>
+
+    <p class="disclaimer">
+      This is an estimate based on sentence variety and common AI-writing phrases.
+      It cannot prove whether text was written by AI. Use it as a guide and review the text yourself.
+    </p>
+  </section>
+
+  <p class="note">Your text stays in your browser. Nothing is sent to a server.</p>
+  <footer>DumboHumanizer 2.0 · Simple writing, better flow</footer>
+</div>
+
+<script>
+/* ---- 1. Connect buttons first, so they work even if later code has a problem ---- */
+document.getElementById("input").oninput = updateCounts;
+document.getElementById("output").oninput = updateCounts;
+document.getElementById("rewriteBtn").onclick = doHumanize;
+document.getElementById("detectBtn").onclick = doDetect;
+document.getElementById("sampleBtn").onclick = loadSample;
+document.getElementById("clearBtn").onclick = clearAll;
+document.getElementById("copyBtn").onclick = copyResult;
+document.getElementById("againBtn").onclick = useAsInput;
+document.getElementById("saveBtn").onclick = saveResult;
+
+/* ---- 2. Helpers ---- */
+function $(id) { return document.getElementById(id); }
+
+function setStatus(msg, kind) {
+  var s = $("status");
+  s.textContent = msg;
+  s.className = kind === "error" ? "error" : (kind === "ok" ? "ok" : "");
+}
+
+function wordCount(text) {
+  var t = String(text).replace(/^\s+|\s+$/g, "");
+  return t ? t.split(/\s+/).length : 0;
+}
+
+function updateCounts() {
+  $("inputCount").textContent = wordCount($("input").value) + " words";
+  $("outputCount").textContent = wordCount($("output").value) + " words";
+}
+
+function showProgress(n, pct, text) {
+  $("progress" + n).className = "progress show";
+  $("fill" + n).style.width = pct + "%";
+  $("ptext" + n).textContent = text;
+}
+
+function hideProgress(n) {
+  setTimeout(function () { $("progress" + n).className = "progress"; }, 900);
+}
+
+/* ---- 3. Editing rules ---- */
+var PHRASES = [
+  [/it is important to note that/gi, "note that"],
+  [/in today's fast-paced world/gi, "today"],
+  [/in today's digital world/gi, "today"],
+  [/in today's modern world/gi, "today"],
+  [/in the modern era/gi, "today"],
+  [/delve deeper into/gi, "look more closely at"],
+  [/delve into/gi, "explore"],
+  [/furthermore/gi, "also"],
+  [/moreover/gi, "also"],
+  [/additionally/gi, "also"],
+  [/in addition to this/gi, "also"],
+  [/in conclusion/gi, "to sum up"],
+  [/to conclude/gi, "in short"],
+  [/plays a crucial role in/gi, "is important for"],
+  [/plays a significant role in/gi, "is important for"],
+  [/crucial/gi, "important"],
+  [/utilizing/gi, "using"],
+  [/utilized/gi, "used"],
+  [/utilize/gi, "use"],
+  [/leverage/gi, "use"],
+  [/facilitate/gi, "help"],
+  [/commence/gi, "begin"],
+  [/prior to/gi, "before"],
+  [/subsequent to/gi, "after"],
+  [/demonstrate/gi, "show"],
+  [/approximately/gi, "about"],
+  [/endeavour/gi, "effort"],
+  [/endeavor/gi, "effort"],
+  [/with regard to/gi, "about"],
+  [/in order to/gi, "to"],
+  [/due to the fact that/gi, "because"],
+  [/has the ability to/gi, "can"],
+  [/is able to/gi, "can"],
+  [/are able to/gi, "can"],
+  [/for the purpose of/gi, "for"],
+  [/at this point in time/gi, "now"],
+  [/in the event that/gi, "if"],
+  [/a large number of/gi, "many"],
+  [/a wide range of/gi, "many"],
+  [/the majority of/gi, "most"],
+  [/make a decision/gi, "decide"],
+  [/in a timely manner/gi, "on time"],
+  [/needless to say,?\s*/gi, ""],
+  [/it goes without saying that\s*/gi, ""],
+  [/in my personal opinion/gi, "in my opinion"],
+  [/very unique/gi, "unique"],
+  [/first and foremost/gi, "first"],
+  [/all things considered/gi, "overall"],
+  [/on a daily basis/gi, "daily"],
+  [/has a tendency to/gi, "often"],
+  [/make use of/gi, "use"],
+  [/in spite of the fact that/gi, "although"],
+  [/for instance/gi, "for example"]
+];
+
+var SIMPLE = [
+  [/commence/gi, "start"], [/purchase/gi, "buy"], [/assist/gi, "help"],
+  [/require/gi, "need"], [/sufficient/gi, "enough"], [/additional/gi, "extra"],
+  [/individuals/gi, "people"], [/subsequently/gi, "later"],
+  [/therefore/gi, "so"], [/consequently/gi, "as a result"]
+];
+
+var CONVERSATIONAL = [
+  [/it is worth mentioning that/gi, "one thing to remember is that"],
+  [/this demonstrates that/gi, "this shows that"],
+  [/in other words/gi, "put simply"],
+  [/nevertheless/gi, "still"],
+  [/individuals/gi, "people"],
+  [/therefore/gi, "so"]
+];
+
+var PROFESSIONAL = [
+  [/a lot of/gi, "many"], [/tons of/gi, "many"], [/get better/gi, "improve"]
+];
+
+var CONTRACTIONS = [
+  [/\bdo not\b/gi, "don't"], [/\bdoes not\b/gi, "doesn't"], [/\bdid not\b/gi, "didn't"],
+  [/\bis not\b/gi, "isn't"], [/\bare not\b/gi, "aren't"], [/\bwas not\b/gi, "wasn't"],
+  [/\bwere not\b/gi, "weren't"], [/\bcannot\b/gi, "can't"], [/\bcould not\b/gi, "couldn't"],
+  [/\bwould not\b/gi, "wouldn't"], [/\bshould not\b/gi, "shouldn't"], [/\bwill not\b/gi, "won't"],
+  [/\bit is\b/gi, "it's"], [/\bthat is\b/gi, "that's"], [/\bthere is\b/gi, "there's"],
+  [/\bwe are\b/gi, "we're"], [/\bthey are\b/gi, "they're"], [/\byou are\b/gi, "you're"],
+  [/\bwe have\b/gi, "we've"], [/\bthey have\b/gi, "they've"],
+  [/\bwe will\b/gi, "we'll"], [/\bthey will\b/gi, "they'll"]
+];
+
+var AI_PHRASES = [
+  /delve(s|d)?/gi, /furthermore/gi, /moreover/gi, /additionally/gi,
+  /crucial/gi, /leverag(e|es|ed|ing)/gi, /utiliz(e|es|ed|ing)/gi,
+  /in today's/gi, /in conclusion/gi, /it is important to note/gi,
+  /robust/gi, /seamless(ly)?/gi, /tapestry/gi, /foster(s|ing)?/gi,
+  /pivotal/gi, /navigate/gi, /embark/gi, /game-?changer/gi,
+  /in the realm of/gi, /it's worth noting/gi
+];
+
+function preserveCase(replacement, original) {
+  if (!replacement) return "";
+  if (original === original.toUpperCase() && /[A-Z]/.test(original)) {
+    return replacement.toUpperCase();
+  }
+  var first = original.charAt(0);
+  if (first === first.toUpperCase() && first !== first.toLowerCase()) {
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
+}
+
+function applyRules(text, rules, limit) {
+  if (limit === undefined) limit = 100000;
+  var changes = 0;
+  for (var i = 0; i < rules.length; i++) {
+    text = text.replace(rules[i][0], function (match) {
+      if (changes >= limit) return match;
+      var next = preserveCase(rules[i][1], match);
+      if (next.toLowerCase() !== match.toLowerCase()) changes++;
+      return next;
+    });
+  }
+  return { text: text, changes: changes };
+}
+
+function tidySpacing(text) {
+  return text
+    .replace(/[ \t]+/g, " ")
+    .replace(/ +([,;:!?.])/g, "$1")
+    .replace(/([,;!?])([A-Za-z])/g, "$1 $2")
+    .replace(/,\s*,+/g, ",")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/(^|[.!?]\s+)([a-z])/g, function (m, pre, ch) { return pre + ch.toUpperCase(); })
+    .replace(/^\s+|\s+$/g, "");
+}
+
+/* ---- 4. Humanize ---- */
+function doHumanize() {
+  var original = $("input").value;
+  var btn = $("rewriteBtn");
+
+  if (!original.replace(/\s/g, "")) {
+    setStatus("Please paste some text first.", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Humanizing...";
+  setStatus("Humanizing your text...");
+  showProgress(1, 20, "Reading your text...");
+
+  setTimeout(function () {
+    try {
+      var text = original, edits = 0, r;
+      var style = $("style").value;
+      var strength = $("strength").value;
+
+      showProgress(1, 45, "Applying phrase improvements...");
+      if (strength !== "light") {
+        r = applyRules(text, PHRASES, strength === "medium" ? 20 : 100000);
+        text = r.text; edits += r.changes;
+      }
+
+      showProgress(1, 70, "Adjusting style...");
+      var extra = style === "simple" ? SIMPLE
+        : style === "conversation" ? CONVERSATIONAL
+        : style === "professional" ? PROFESSIONAL : null;
+      if (extra) {
+        r = applyRules(text, extra);
+        text = r.text; edits += r.changes;
+      }
+
+      if ($("contractions").checked && style !== "professional") {
+        r = applyRules(text, CONTRACTIONS);
+        text = r.text; edits += r.changes;
+      }
+
+      showProgress(1, 90, "Cleaning up spacing...");
+      text = tidySpacing(text);
+
+      $("output").value = text;
+      $("changes").textContent = edits;
+      $("beforeWords").textContent = wordCount(original);
+      $("afterWords").textContent = wordCount(text);
+      updateCounts();
+      resetDetector();
+
+      showProgress(1, 100, "Done ✅");
+      hideProgress(1);
+      setStatus("Humanizing complete. Review the text for meaning and accuracy.", "ok");
+    } catch (err) {
+      setStatus("Humanize failed: " + err.message, "error");
+      $("progress1").className = "progress";
+    }
+    btn.disabled = false;
+    btn.textContent = "✨ Humanize";
+  }, 150);
+}
+
+/* ---- 5. AI detector ---- */
+function resetDetector() {
+  $("aiScore").textContent = "--";
+  $("aiLabel").textContent = "No check yet";
+  $("aiLabel").style.color = "";
+  $("aiMeter").style.width = "0%";
+  $("detectWords").textContent = "Checks the result above";
+  $("aiDetails").innerHTML = "<li>Click \"Check AI score\" after humanizing.</li>";
+}
+
+function analyzeText(text) {
+  var words = wordCount(text);
+  var parts = text.split(/[.!?\u0964]+/);
+  var lengths = [], i;
+  for (i = 0; i < parts.length; i++) {
+    var n = wordCount(parts[i]);
+    if (n > 0) lengths.push(n);
+  }
+  var sentences = lengths.length, sum = 0, j;
+  for (j = 0; j < sentences; j++) sum += lengths[j];
+  var mean = sentences ? sum / sentences : 0;
+  var sq = 0;
+  for (j = 0; j < sentences; j++) sq += Math.pow(lengths[j] - mean, 2);
+  var burstiness = mean ? Math.sqrt(sq / sentences) / mean : 0;
+
+  var hits = 0;
+  for (i = 0; i < AI_PHRASES.length; i++) {
+    var m = text.match(AI_PHRASES[i]);
+    if (m) hits += m.length;
+  }
+  var per100 = words ? (hits / words) * 100 : 0;
+
+  var score = 50;
+  if (burstiness < 0.25) score += 25;
+  else if (burstiness < 0.4) score += 12;
+  else if (burstiness > 0.7) score -= 20;
+  else if (burstiness > 0.55) score -= 10;
+
+  if (per100 >= 3) score += 20;
+  else if (per100 >= 1.5) score += 10;
+  else if (per100 === 0) score -= 5;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  return { sentences: sentences, mean: mean, burstiness: burstiness, hits: hits, score: score };
+}
+
+function doDetect() {
+  var text = $("output").value.replace(/^\s+|\s+$/g, "") || $("input").value.replace(/^\s+|\s+$/g, "");
+  var btn = $("detectBtn");
+
+  if (!text) {
+    setStatus("Humanize some text first, then check it.", "error");
+    return;
+  }
+
+  var wc = wordCount(text);
+  $("detectWords").textContent = wc + " words checked";
+
+  if (wc < 50) {
+    $("aiScore").textContent = "--";
+    $("aiLabel").textContent = "Need more text";
+    $("aiLabel").style.color = "";
+    $("aiMeter").style.width = "0%";
+    $("aiDetails").innerHTML = "<li>Add at least 50 words for a useful estimate.</li>";
+    setStatus("Add at least 50 words for a useful estimate.", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Checking...";
+  setStatus("Checking AI score...");
+  showProgress(2, 30, "Counting sentences...");
+
+  setTimeout(function () {
+    try {
+      showProgress(2, 70, "Analyzing sentence variety and phrases...");
+      var r = analyzeText(text);
+
+      var label, color;
+      if (r.score < 35) { label = "Likely human-written"; color = "#4ade80"; }
+      else if (r.score < 65) { label = "Mixed or unclear"; color = "#facc15"; }
+      else { label = "Likely AI-like"; color = "#f87171"; }
+
+      $("aiScore").textContent = r.score + "%";
+      $("aiLabel").textContent = label;
+      $("aiLabel").style.color = color;
+      $("aiMeter").style.width = r.score + "%";
+
+      var variety = r.burstiness < 0.25 ? "Very even sentence lengths (common in AI text)"
+        : r.burstiness < 0.4 ? "Fairly even sentence lengths"
+        : r.burstiness > 0.7 ? "Very varied sentence lengths (common in human text)"
+        : "Mixed sentence lengths";
+      var phrases = r.hits === 0 ? "No common AI-style phrases found"
+        : r.hits + " common AI-style phrase(s) found";
+
+      $("aiDetails").innerHTML =
+        "<li>Sentences: " + r.sentences + ", average " + r.mean.toFixed(1) + " words each</li>" +
+        "<li>" + variety + "</li>" +
+        "<li>" + phrases + "</li>";
+
+      showProgress(2, 100, "Done ✅");
+      hideProgress(2);
+      setStatus("AI check complete.", "ok");
+    } catch (err) {
+      setStatus("Check failed: " + err.message, "error");
+      $("progress2").className = "progress";
+    }
+    btn.disabled = false;
+    btn.textContent = "🔍 Check AI score";
+  }, 150);
+}
+
+/* ---- 6. Other buttons ---- */
+function copyResult() {
+  var text = $("output").value;
+  if (!text.replace(/\s/g, "")) { setStatus("There is no result to copy yet.", "error"); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      setStatus("Result copied to clipboard.", "ok");
+    }, fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function fallbackCopy() {
+  var o = $("output");
+  o.focus();
+  o.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  setStatus(ok ? "Result copied." : "Select the result and copy it manually.", ok ? "ok" : "error");
+}
+
+function useAsInput() {
+  if (!$("output").value.replace(/\s/g, "")) { setStatus("Humanize some text first.", "error"); return; }
+  $("input").value = $("output").value;
+  $("output").value = "";
+  $("changes").textContent = "0";
+  $("beforeWords").textContent = wordCount($("input").value);
+  $("afterWords").textContent = "0";
+  updateCounts();
+  resetDetector();
+  setStatus("Result moved to the input. Tap Humanize again.", "ok");
+}
+
+function clearAll() {
+  $("input").value = "";
+  $("output").value = "";
+  $("changes").textContent = "0";
+  $("beforeWords").textContent = "0";
+  $("afterWords").textContent = "0";
+  updateCounts();
+  resetDetector();
+  setStatus("All text cleared.", "ok");
+}
+
+function loadSample() {
+  $("input").value = "In today's fast-paced world, it is important to note that education plays a crucial role in the development of children. Furthermore, teachers need to utilize effective methods in order to facilitate learning. In conclusion, a wide range of strategies can help improve classroom learning.";
+  updateCounts();
+  setStatus("Sample loaded. Tap Humanize.", "ok");
+}
+
+function saveResult() {
+  var text = $("output").value;
+  if (!text.replace(/\s/g, "")) { setStatus("There is no result to save yet.", "error"); return; }
+  try {
+    var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "dumbohumanizer-result.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.parentNode.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+    setStatus("Text file prepared for saving.", "ok");
+  } catch (e) {
+    setStatus("Saving is not supported in this browser. Use Copy result instead.", "error");
+  }
+}
+
+/* ---- 7. Ready ---- */
+updateCounts();
+setStatus("Script loaded ✅ Paste text and tap Humanize.", "ok");
+</script>
+</body>
+</html>
