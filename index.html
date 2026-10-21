@@ -110,16 +110,41 @@ button {
   font: inherit;
   font-weight: 700;
   transition: transform .15s, opacity .15s;
+  -webkit-tap-highlight-color: transparent;
 }
 button:active { transform: scale(.98); }
+button:disabled { opacity: .6; cursor: wait; transform: none; }
 .primary {
   width: 100%;
   color: #11152b;
   background: linear-gradient(100deg, #a5b4fc, #c4b5fd);
+  font-size: 16px;
 }
 .secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .actions button { flex: 1; min-width: 105px; font-size: 13px; }
+
+/* progress */
+.progress {
+  display: none;
+  margin-top: 14px;
+}
+.progress.show { display: block; }
+.progress-bar {
+  height: 8px;
+  background: #0c1325;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #818cf8, #c084fc);
+  transition: width .25s;
+}
+.progress-text { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -135,7 +160,18 @@ button:active { transform: scale(.98); }
 }
 .stat strong { display: block; font-size: 20px; color: #c4b5fd; }
 .stat span { font-size: 11px; color: var(--muted); }
-#status { font-size: 13px; color: var(--green); margin: 12px 0 0; min-height: 1em; }
+
+#status {
+  font-size: 13px;
+  color: var(--green);
+  margin: 12px 0 0;
+  min-height: 1.2em;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+}
+#status.flash { background: rgba(74, 222, 128, .12); }
+#status.error { color: var(--red); background: rgba(248, 113, 113, .12); }
 
 /* AI detector */
 .detector-score {
@@ -241,6 +277,11 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
 
     <button class="primary" id="rewriteBtn">✨ Humanize</button>
 
+    <div class="progress" id="progress1">
+      <div class="progress-bar"><div class="progress-fill" id="fill1"></div></div>
+      <div class="progress-text" id="progressText1"></div>
+    </div>
+
     <div class="actions">
       <button class="secondary" id="sampleBtn">Try sample</button>
       <button class="secondary" id="clearBtn">Clear all</button>
@@ -276,7 +317,7 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
       <button class="secondary" id="saveBtn">⬇ Save TXT</button>
     </div>
 
-    <p id="status" role="status" aria-live="polite"></p>
+    <p id="status" role="status" aria-live="polite">Ready. Paste text and tap Humanize.</p>
   </section>
 
   <section class="panel">
@@ -287,6 +328,11 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
 
     <div class="actions" style="margin-top:0">
       <button class="secondary" id="detectBtn">🔍 Check AI score</button>
+    </div>
+
+    <div class="progress" id="progress2">
+      <div class="progress-bar"><div class="progress-fill" id="fill2"></div></div>
+      <div class="progress-text" id="progressText2"></div>
     </div>
 
     <div class="detector-score">
@@ -314,11 +360,11 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
 <script>
 "use strict";
 
-const $ = id => document.getElementById(id);
+var $ = function (id) { return document.getElementById(id); };
 
 /* ---------- editing rules ---------- */
 
-const PHRASES = [
+var PHRASES = [
   [/\bit is important to note that\b/gi, "note that"],
   [/\bit's important to note that\b/gi, "remember that"],
   [/\bin today's fast-paced world\b/gi, "today"],
@@ -330,4 +376,302 @@ const PHRASES = [
   [/\bfurthermore\b/gi, "also"],
   [/\bmoreover\b/gi, "also"],
   [/\badditionally\b/gi, "also"],
-  [/\bin addition to this\b/gi,
+  [/\bin addition to this\b/gi, "also"],
+  [/\bin conclusion\b/gi, "to sum up"],
+  [/\bto conclude\b/gi, "in short"],
+  [/\bplays a crucial role in\b/gi, "is important for"],
+  [/\bplays a significant role in\b/gi, "is important for"],
+  [/\bcrucial\b/gi, "important"],
+  [/\butilizing\b/gi, "using"],
+  [/\butilized\b/gi, "used"],
+  [/\butilize\b/gi, "use"],
+  [/\bleverage\b/gi, "use"],
+  [/\bfacilitate\b/gi, "help"],
+  [/\bcommence\b/gi, "begin"],
+  [/\bprior to\b/gi, "before"],
+  [/\bsubsequent to\b/gi, "after"],
+  [/\bdemonstrate\b/gi, "show"],
+  [/\bapproximately\b/gi, "about"],
+  [/\bendeavour\b/gi, "effort"],
+  [/\bendeavor\b/gi, "effort"],
+  [/\bwith regard to\b/gi, "about"],
+  [/\bin order to\b/gi, "to"],
+  [/\bdue to the fact that\b/gi, "because"],
+  [/\bhas the ability to\b/gi, "can"],
+  [/\bis able to\b/gi, "can"],
+  [/\bare able to\b/gi, "can"],
+  [/\bfor the purpose of\b/gi, "for"],
+  [/\bat this point in time\b/gi, "now"],
+  [/\bin the event that\b/gi, "if"],
+  [/\ba large number of\b/gi, "many"],
+  [/\ba wide range of\b/gi, "many"],
+  [/\bthe majority of\b/gi, "most"],
+  [/\bmake a decision\b/gi, "decide"],
+  [/\bcome to the conclusion that\b/gi, "conclude that"],
+  [/\bin a timely manner\b/gi, "on time"],
+  [/\bneedless to say,?\s*/gi, ""],
+  [/\bit goes without saying that\s*/gi, ""],
+  [/\bin my personal opinion\b/gi, "in my opinion"],
+  [/\bthe reason why is because\b/gi, "the reason is that"],
+  [/\bvery unique\b/gi, "unique"],
+  [/\bcompletely eliminate\b/gi, "eliminate"],
+  [/\bfirst and foremost\b/gi, "first"],
+  [/\ball things considered\b/gi, "overall"],
+  [/\bnot only that, but also\b/gi, "and"],
+  [/\bon a daily basis\b/gi, "daily"],
+  [/\bhas a tendency to\b/gi, "often"],
+  [/\bmake use of\b/gi, "use"],
+  [/\bin spite of the fact that\b/gi, "although"],
+  [/\bfor instance\b/gi, "for example"]
+];
+
+var SIMPLE = [
+  [/\bcommence\b/gi, "start"],
+  [/\bpurchase\b/gi, "buy"],
+  [/\bassist\b/gi, "help"],
+  [/\bapproximately\b/gi, "about"],
+  [/\brequire\b/gi, "need"],
+  [/\bdetermine\b/gi, "find out"],
+  [/\bfrequently\b/gi, "often"],
+  [/\bsufficient\b/gi, "enough"],
+  [/\badditional\b/gi, "extra"],
+  [/\bindividuals\b/gi, "people"],
+  [/\bsubsequently\b/gi, "later"],
+  [/\btherefore\b/gi, "so"],
+  [/\bconsequently\b/gi, "as a result"]
+];
+
+var CONVERSATIONAL = [
+  [/\bit is worth mentioning that\b/gi, "one thing to remember is that"],
+  [/\bthis demonstrates that\b/gi, "this shows that"],
+  [/\bin other words\b/gi, "put simply"],
+  [/\bnevertheless\b/gi, "still"],
+  [/\bindividuals\b/gi, "people"],
+  [/\btherefore\b/gi, "so"]
+];
+
+var PROFESSIONAL = [
+  [/\ba lot of\b/gi, "many"],
+  [/\btons of\b/gi, "many"],
+  [/\bget better\b/gi, "improve"]
+];
+
+var CONTRACTIONS = [
+  [/\bdo not\b/gi, "don't"],
+  [/\bdoes not\b/gi, "doesn't"],
+  [/\bdid not\b/gi, "didn't"],
+  [/\bis not\b/gi, "isn't"],
+  [/\bare not\b/gi, "aren't"],
+  [/\bwas not\b/gi, "wasn't"],
+  [/\bwere not\b/gi, "weren't"],
+  [/\bcannot\b/gi, "can't"],
+  [/\bcould not\b/gi, "couldn't"],
+  [/\bwould not\b/gi, "wouldn't"],
+  [/\bshould not\b/gi, "shouldn't"],
+  [/\bwill not\b/gi, "won't"],
+  [/\bI am\b/g, "I'm"],
+  [/\bit is\b/gi, "it's"],
+  [/\bthat is\b/gi, "that's"],
+  [/\bthere is\b/gi, "there's"],
+  [/\bwe are\b/gi, "we're"],
+  [/\bthey are\b/gi, "they're"],
+  [/\byou are\b/gi, "you're"],
+  [/\bI have\b/g, "I've"],
+  [/\bwe have\b/gi, "we've"],
+  [/\bthey have\b/gi, "they've"],
+  [/\bI will\b/g, "I'll"],
+  [/\bwe will\b/gi, "we'll"],
+  [/\bthey will\b/gi, "they'll"]
+];
+
+/* Phrases AI writing tends to overuse (used by the detector). */
+var AI_PHRASES = [
+  /\bdelve[sd]?\b/gi, /\bfurthermore\b/gi, /\bmoreover\b/gi, /\badditionally\b/gi,
+  /\bcrucial\b/gi, /\bleverag(e|es|ed|ing)\b/gi, /\butiliz(e|es|ed|ing)\b/gi,
+  /\bin today's\b/gi, /\bin conclusion\b/gi, /\bit is important to note\b/gi,
+  /\bplays a (crucial|significant|vital|key) role\b/gi, /\brobust\b/gi,
+  /\bseamless(ly)?\b/gi, /\btapestry\b/gi, /\blandscape\b/gi, /\bfoster(s|ing)?\b/gi,
+  /\bunderscores?\b/gi, /\bpivotal\b/gi, /\bnavigate\b/gi, /\bembark\b/gi,
+  /\bgame-?changer\b/gi, /\bin the realm of\b/gi, /\bit's worth noting\b/gi
+];
+
+/* ---------- helpers ---------- */
+
+// Word characters: Latin, Latin-extended, Devanagari, Bengali/Assamese.
+// Written without \p{...} so it works on older Android WebViews.
+var WORD = "A-Za-z0-9\\u00C0-\\u024F\\u0900-\\u097F\\u0980-\\u09FF";
+
+function wordCount(text) {
+  var re = new RegExp("[" + WORD + "]+(?:['\u2019][A-Za-z\\u00C0-\\u024F]+)?", "g");
+  var matches = text.trim().match(re);
+  return matches ? matches.length : 0;
+}
+
+function setStatus(msg, kind) {
+  var el = $("status");
+  el.textContent = msg;
+  el.className = kind === "error" ? "error" : "flash";
+}
+
+function pause(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+function setProgress(n, text, fillId, textId, progressId) {
+  $(progressId).classList.add("show");
+  $(fillId).style.width = n + "%";
+  $(textId).textContent = text;
+}
+
+function hideProgress(progressId) {
+  setTimeout(function () {
+    $(progressId).classList.remove("show");
+  }, 700);
+}
+
+function setBusy(btnId, busy, busyText, normalText) {
+  var b = $(btnId);
+  b.disabled = busy;
+  b.textContent = busy ? busyText : normalText;
+}
+
+function updateCounts() {
+  $("inputCount").textContent = wordCount($("input").value) + " words";
+  $("outputCount").textContent = wordCount($("output").value) + " words";
+}
+
+function preserveCase(replacement, original) {
+  if (!replacement) return "";
+  if (original === original.toUpperCase() && /[A-Z]/.test(original)) {
+    return replacement.toUpperCase();
+  }
+  if (original.charAt(0) === original.charAt(0).toUpperCase() &&
+      original.charAt(0) !== original.charAt(0).toLowerCase()) {
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
+}
+
+// Applies rules in order. `limit` caps how many real changes are made.
+function applyRules(text, rules, limit) {
+  if (limit === undefined) limit = Infinity;
+  var changes = 0;
+
+  for (var i = 0; i < rules.length; i++) {
+    var pattern = rules[i][0];
+    var replacement = rules[i][1];
+    text = text.replace(pattern, function (match) {
+      if (changes >= limit) return match;
+      var next = preserveCase(replacement, match);
+      if (next.toLowerCase() !== match.toLowerCase()) changes++;
+      return next;
+    });
+  }
+
+  return { text: text, changes: changes };
+}
+
+function tidySpacing(text) {
+  var L = "A-Za-z\\u00C0-\\u024F\\u0900-\\u097F\\u0980-\\u09FF";
+  return text
+    .replace(/[ \t]+/g, " ")
+    .replace(/ +([,;:!?.])/g, "$1")
+    .replace(new RegExp("([,;!?])(?=[" + L + "])", "g"), "$1 ")
+    .replace(/,\s*,+/g, ",")
+    .replace(/^\s*[,;]\s*/gm, "")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/(^|[.!?]\s+|\n\s*)([a-z])/g, function (m, pre, ch) {
+      return pre + ch.toUpperCase();
+    })
+    .trim();
+}
+
+/* ---------- humanize ---------- */
+
+async function rewriteText() {
+  var original = $("input").value;
+
+  if (!original.trim()) {
+    setStatus("Please paste some text first.", "error");
+    $("input").focus();
+    return;
+  }
+
+  setBusy("rewriteBtn", true, "⏳ Humanizing...", "✨ Humanize");
+  setStatus("Working on your text...");
+
+  try {
+    setProgress(10, "Reading your text...", "fill1", "progressText1", "progress1");
+    await pause(200);
+
+    var text = original;
+    var edits = 0;
+    var style = $("style").value;
+    var strength = $("strength").value;
+
+    setProgress(35, "Applying phrase improvements...", "fill1", "progressText1", "progress1");
+    await pause(200);
+
+    if (strength !== "light") {
+      var limit = strength === "medium" ? 20 : Infinity;
+      var r1 = applyRules(text, PHRASES, limit);
+      text = r1.text;
+      edits += r1.changes;
+    }
+
+    setProgress(60, "Adjusting style...", "fill1", "progressText1", "progress1");
+    await pause(200);
+
+    if (style === "simple") {
+      var r2 = applyRules(text, SIMPLE);
+      text = r2.text;
+      edits += r2.changes;
+    } else if (style === "conversation") {
+      var r3 = applyRules(text, CONVERSATIONAL);
+      text = r3.text;
+      edits += r3.changes;
+    } else if (style === "professional") {
+      var r4 = applyRules(text, PROFESSIONAL);
+      text = r4.text;
+      edits += r4.changes;
+    }
+
+    if ($("contractions").checked && style !== "professional") {
+      var r5 = applyRules(text, CONTRACTIONS);
+      text = r5.text;
+      edits += r5.changes;
+    }
+
+    setProgress(85, "Cleaning up spacing and punctuation...", "fill1", "progressText1", "progress1");
+    await pause(150);
+
+    text = tidySpacing(text);
+
+    $("output").value = text;
+    $("changes").textContent = edits;
+    $("beforeWords").textContent = wordCount(original);
+    $("afterWords").textContent = wordCount(text);
+    updateCounts();
+    resetDetector();
+
+    setProgress(100, "Done ✅", "fill1", "progressText1", "progress1");
+    setStatus("Humanizing complete. Review the text for meaning, tone and accuracy.");
+    hideProgress("progress1");
+  } catch (err) {
+    setStatus("Something went wrong: " + (err && err.message ? err.message : err), "error");
+    $("progress1").classList.remove("show");
+  } finally {
+    setBusy("rewriteBtn", false, "", "✨ Humanize");
+  }
+}
+
+/* ---------- AI detector (runs locally) ---------- */
+
+function resetDetector() {
+  $("aiScore").textContent = "--";
+  $("aiLabel").textContent = "No check yet";
+  $("aiLabel").style.color = "";
+  $("aiMeter").style.width = "0%";
+  $("detectWords").textContent = "Checks the result above";
+  $("aiDetails").innerHTML = "<li>
