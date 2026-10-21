@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#101525">
 <meta name="description" content="DumboHumanizer - humanize your writing and check its AI score.">
 <link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
 <title>DumboHumanizer 2.0</title>
 <style>
 :root{--bg:#0b1020;--panel2:#19243c;--text:#f3f5fc;--muted:#9caac3;--accent:#818cf8;--border:#2b3853;--green:#4ade80;--yellow:#facc15;--red:#f87171}
@@ -13,7 +14,8 @@
 body{margin:0;padding:24px 15px 40px;background:#0b1020;color:var(--text);font-family:system-ui,-apple-system,Arial,sans-serif}
 .app{max-width:850px;margin:auto}
 header{text-align:center;padding:15px 0 25px}
-.logo{display:inline-block;width:58px;height:58px;line-height:58px;border-radius:18px;background:#818cf8;color:#101525;font-size:28px;font-weight:900}
+.logo{display:inline-block;width:58px;height:58px;border-radius:18px;object-fit:cover;vertical-align:middle}
+.logo-fallback{display:none;width:58px;height:58px;line-height:58px;border-radius:18px;background:#818cf8;color:#101525;font-size:28px;font-weight:900;text-align:center}
 h1{font-size:34px;margin:12px 0 5px}
 h1 span{color:#a5b4fc}
 .subtitle{color:var(--muted);margin:0;font-size:14px}
@@ -59,7 +61,9 @@ footer{text-align:center;color:#71809b;font-size:12px;padding:15px}
 <body>
 <div class="app">
   <header>
-    <div class="logo">D</div>
+    <img class="logo" src="icon.png" alt="DumboHumanizer logo"
+         onerror="this.style.display='none';document.getElementById('logoFallback').style.display='inline-block';">
+    <div class="logo-fallback" id="logoFallback">D</div>
     <h1>Dumbo<span>Humanizer</span></h1>
     <p class="subtitle">Make your writing clearer, more natural and easier to read.</p>
   </header>
