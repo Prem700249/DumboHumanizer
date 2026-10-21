@@ -4,19 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#101525">
-<meta name="description" content="DumboHumanizer - improve clarity, flow and naturalness in your writing.">
+<meta name="description" content="DumboHumanizer - humanize your writing and check its AI score.">
 <title>DumboHumanizer 2.0</title>
 
 <style>
 :root {
   --bg: #0b1020;
-  --panel: #131b30;
   --panel2: #19243c;
   --text: #f3f5fc;
   --muted: #9caac3;
   --accent: #818cf8;
   --border: #2b3853;
   --green: #4ade80;
+  --yellow: #facc15;
+  --red: #f87171;
 }
 * { box-sizing: border-box; }
 body {
@@ -97,8 +98,8 @@ select {
   gap: 9px;
   color: #d3daeb;
   font-size: 13px;
-  margin: 15px 0;
   font-weight: 400;
+  margin: 15px 0;
 }
 .checkrow input { accent-color: var(--accent); width: 17px; height: 17px; }
 button {
@@ -135,13 +136,56 @@ button:active { transform: scale(.98); }
 .stat strong { display: block; font-size: 20px; color: #c4b5fd; }
 .stat span { font-size: 11px; color: var(--muted); }
 #status { font-size: 13px; color: var(--green); margin: 12px 0 0; min-height: 1em; }
+
+/* AI detector */
+.detector-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+.detector-score strong { font-size: 34px; color: #c4b5fd; }
+.detector-label { font-size: 14px; font-weight: 700; }
+.meter {
+  height: 10px;
+  background: #0c1325;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+  transition: width .4s;
+}
+.detail-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.detail-list li { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.detail-list li:last-child { border-bottom: 0; }
+.disclaimer {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
 .note {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.7;
   margin-top: 14px;
+  text-align: center;
 }
 footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
+
 @media (max-width: 480px) {
   body { padding: 12px 10px 30px; }
   .panel { padding: 13px; }
@@ -195,7 +239,7 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
       Use natural contractions where appropriate
     </label>
 
-    <button class="primary" id="rewriteBtn">✨ Improve My Writing</button>
+    <button class="primary" id="rewriteBtn">✨ Humanize</button>
 
     <div class="actions">
       <button class="secondary" id="sampleBtn">Try sample</button>
@@ -205,11 +249,11 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
 
   <section class="panel">
     <div class="topline">
-      <label for="output">Edited result</label>
+      <label for="output">Humanized result</label>
       <span class="counter" id="outputCount">0 words</span>
     </div>
 
-    <textarea id="output" placeholder="Your edited text will appear here..." spellcheck="true"></textarea>
+    <textarea id="output" placeholder="Your humanized text will appear here..." spellcheck="true"></textarea>
 
     <div class="stats">
       <div class="stat">
@@ -235,11 +279,34 @@ footer { text-align: center; color: #71809b; font-size: 12px; padding: 15px; }
     <p id="status" role="status" aria-live="polite"></p>
   </section>
 
-  <p class="note">
-    Privacy: this tool processes text in your browser. It does not send your
-    text to a server. Editing rules can improve readability, but they cannot guarantee
-    a particular AI-detector score. Review the result for accuracy before using it.
-  </p>
+  <section class="panel">
+    <div class="topline">
+      <label>AI detector</label>
+      <span class="counter" id="detectWords">Checks the result above</span>
+    </div>
+
+    <div class="actions" style="margin-top:0">
+      <button class="secondary" id="detectBtn">🔍 Check AI score</button>
+    </div>
+
+    <div class="detector-score">
+      <strong id="aiScore">--</strong>
+      <span class="detector-label" id="aiLabel">No check yet</span>
+    </div>
+    <div class="meter"><div class="meter-fill" id="aiMeter"></div></div>
+
+    <ul class="detail-list" id="aiDetails">
+      <li>Runs on this device. Your text is not uploaded anywhere.</li>
+    </ul>
+
+    <p class="disclaimer">
+      This is an estimate based on sentence variety and common AI-writing phrases.
+      It cannot prove whether text was written by AI, and a low score does not guarantee
+      that a detector elsewhere will agree. Use it as a guide and review the text yourself.
+    </p>
+  </section>
+
+  <p class="note">Your text stays in your browser. Nothing is sent to a server.</p>
 
   <footer>DumboHumanizer 2.0 · Simple writing, better flow</footer>
 </div>
@@ -263,307 +330,4 @@ const PHRASES = [
   [/\bfurthermore\b/gi, "also"],
   [/\bmoreover\b/gi, "also"],
   [/\badditionally\b/gi, "also"],
-  [/\bin addition to this\b/gi, "also"],
-  [/\bin conclusion\b/gi, "to sum up"],
-  [/\bto conclude\b/gi, "in short"],
-  [/\bplays a crucial role in\b/gi, "is important for"],
-  [/\bplays a significant role in\b/gi, "is important for"],
-  [/\bcrucial\b/gi, "important"],
-  [/\butilizing\b/gi, "using"],
-  [/\butilized\b/gi, "used"],
-  [/\butilize\b/gi, "use"],
-  [/\bleverage\b/gi, "use"],
-  [/\bfacilitate\b/gi, "help"],
-  [/\bcommence\b/gi, "begin"],
-  [/\bprior to\b/gi, "before"],
-  [/\bsubsequent to\b/gi, "after"],
-  [/\bdemonstrate\b/gi, "show"],
-  [/\bapproximately\b/gi, "about"],
-  [/\bendeavour\b/gi, "effort"],
-  [/\bendeavor\b/gi, "effort"],
-  [/\bwith regard to\b/gi, "about"],
-  [/\bin order to\b/gi, "to"],
-  [/\bdue to the fact that\b/gi, "because"],
-  [/\bhas the ability to\b/gi, "can"],
-  [/\bis able to\b/gi, "can"],
-  [/\bare able to\b/gi, "can"],
-  [/\bfor the purpose of\b/gi, "for"],
-  [/\bat this point in time\b/gi, "now"],
-  [/\bin the event that\b/gi, "if"],
-  [/\ba large number of\b/gi, "many"],
-  [/\ba wide range of\b/gi, "many"],
-  [/\bthe majority of\b/gi, "most"],
-  [/\bmake a decision\b/gi, "decide"],
-  [/\bcome to the conclusion that\b/gi, "conclude that"],
-  [/\bin a timely manner\b/gi, "on time"],
-  [/\bneedless to say,?\s*/gi, ""],
-  [/\bit goes without saying that\s*/gi, ""],
-  [/\bin my personal opinion\b/gi, "in my opinion"],
-  [/\bthe reason why is because\b/gi, "the reason is that"],
-  [/\bvery unique\b/gi, "unique"],
-  [/\bcompletely eliminate\b/gi, "eliminate"],
-  [/\bfirst and foremost\b/gi, "first"],
-  [/\ball things considered\b/gi, "overall"],
-  [/\bnot only that, but also\b/gi, "and"],
-  [/\bon a daily basis\b/gi, "daily"],
-  [/\bhas a tendency to\b/gi, "often"],
-  [/\bmake use of\b/gi, "use"],
-  [/\bin spite of the fact that\b/gi, "although"],
-  [/\bfor instance\b/gi, "for example"]
-];
-
-const SIMPLE = [
-  [/\bcommence\b/gi, "start"],
-  [/\bpurchase\b/gi, "buy"],
-  [/\bassist\b/gi, "help"],
-  [/\bapproximately\b/gi, "about"],
-  [/\brequire\b/gi, "need"],
-  [/\bdetermine\b/gi, "find out"],
-  [/\bfrequently\b/gi, "often"],
-  [/\bsufficient\b/gi, "enough"],
-  [/\badditional\b/gi, "extra"],
-  [/\bindividuals\b/gi, "people"],
-  [/\bsubsequently\b/gi, "later"],
-  [/\btherefore\b/gi, "so"],
-  [/\bconsequently\b/gi, "as a result"]
-];
-
-const CONVERSATIONAL = [
-  [/\bit is worth mentioning that\b/gi, "one thing to remember is that"],
-  [/\bthis demonstrates that\b/gi, "this shows that"],
-  [/\bin other words\b/gi, "put simply"],
-  [/\bnevertheless\b/gi, "still"],
-  [/\bindividuals\b/gi, "people"],
-  [/\btherefore\b/gi, "so"]
-];
-
-const PROFESSIONAL = [
-  [/\ba lot of\b/gi, "many"],
-  [/\btons of\b/gi, "many"],
-  [/\bget better\b/gi, "improve"]
-];
-
-const CONTRACTIONS = [
-  [/\bdo not\b/gi, "don't"],
-  [/\bdoes not\b/gi, "doesn't"],
-  [/\bdid not\b/gi, "didn't"],
-  [/\bis not\b/gi, "isn't"],
-  [/\bare not\b/gi, "aren't"],
-  [/\bwas not\b/gi, "wasn't"],
-  [/\bwere not\b/gi, "weren't"],
-  [/\bcannot\b/gi, "can't"],
-  [/\bcould not\b/gi, "couldn't"],
-  [/\bwould not\b/gi, "wouldn't"],
-  [/\bshould not\b/gi, "shouldn't"],
-  [/\bwill not\b/gi, "won't"],
-  [/\bI am\b/g, "I'm"],
-  [/\bit is\b/gi, "it's"],
-  [/\bthat is\b/gi, "that's"],
-  [/\bthere is\b/gi, "there's"],
-  [/\bwe are\b/gi, "we're"],
-  [/\bthey are\b/gi, "they're"],
-  [/\byou are\b/gi, "you're"],
-  [/\bI have\b/g, "I've"],
-  [/\bwe have\b/gi, "we've"],
-  [/\bthey have\b/gi, "they've"],
-  [/\bI will\b/g, "I'll"],
-  [/\bwe will\b/gi, "we'll"],
-  [/\bthey will\b/gi, "they'll"]
-];
-
-/* ---------- helpers ---------- */
-
-function wordCount(text) {
-  const matches = text.trim().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu);
-  return matches ? matches.length : 0;
-}
-
-function setStatus(msg) {
-  $("status").textContent = msg;
-}
-
-function updateCounts() {
-  $("inputCount").textContent = wordCount($("input").value) + " words";
-  $("outputCount").textContent = wordCount($("output").value) + " words";
-}
-
-function preserveCase(replacement, original) {
-  if (!replacement) return "";
-  if (original === original.toUpperCase() && /[A-Z]/.test(original)) {
-    return replacement.toUpperCase();
-  }
-  if (original[0] === original[0].toUpperCase() && original[0] !== original[0].toLowerCase()) {
-    return replacement[0].toUpperCase() + replacement.slice(1);
-  }
-  return replacement;
-}
-
-// Applies rules in order. `limit` caps how many real changes are made.
-function applyRules(text, rules, limit = Infinity) {
-  let changes = 0;
-
-  for (const [pattern, replacement] of rules) {
-    text = text.replace(pattern, match => {
-      if (changes >= limit) return match;
-      const next = preserveCase(replacement, match);
-      if (next.toLowerCase() !== match.toLowerCase()) changes++;
-      return next;
-    });
-  }
-
-  return { text, changes };
-}
-
-function tidySpacing(text) {
-  return text
-    .replace(/[ \t]+/g, " ")                    // collapse repeated spaces
-    .replace(/ +([,;:!?.])/g, "$1")             // no space before punctuation
-    .replace(/([,;!?])(?=\p{L})/gu, "$1 ")      // space after , ; ! ? when a word is glued on
-    .replace(/,\s*,+/g, ",")                    // remove doubled commas
-    .replace(/^\s*[,;]\s*/gm, "")               // remove a leftover leading comma after a deleted phrase
-    .replace(/[ \t]*\n[ \t]*/g, "\n")           // trim spaces around line breaks
-    .replace(/\n{3,}/g, "\n\n")                 // keep at most one blank line
-    .replace(/(^|[.!?]\s+|\n\s*)(\p{Ll})/gu,    // capitalize sentence starts
-      (m, pre, ch) => pre + ch.toUpperCase())
-    .trim();
-}
-
-/* ---------- main action ---------- */
-
-function rewriteText() {
-  const original = $("input").value;
-
-  if (!original.trim()) {
-    setStatus("Please paste some text first.");
-    $("input").focus();
-    return;
-  }
-
-  let text = original;
-  let edits = 0;
-  const style = $("style").value;
-  const strength = $("strength").value;
-
-  if (strength !== "light") {
-    const limit = strength === "medium" ? 20 : Infinity;
-    const result = applyRules(text, PHRASES, limit);
-    text = result.text;
-    edits += result.changes;
-  }
-
-  if (style === "simple") {
-    const result = applyRules(text, SIMPLE);
-    text = result.text;
-    edits += result.changes;
-  } else if (style === "conversation") {
-    const result = applyRules(text, CONVERSATIONAL);
-    text = result.text;
-    edits += result.changes;
-  } else if (style === "professional") {
-    const result = applyRules(text, PROFESSIONAL);
-    text = result.text;
-    edits += result.changes;
-  }
-
-  if ($("contractions").checked && style !== "professional") {
-    const result = applyRules(text, CONTRACTIONS);
-    text = result.text;
-    edits += result.changes;
-  }
-
-  text = tidySpacing(text);
-
-  $("output").value = text;
-  $("changes").textContent = edits;
-  $("beforeWords").textContent = wordCount(original);
-  $("afterWords").textContent = wordCount(text);
-  updateCounts();
-
-  setStatus("Editing complete. Please review the text for meaning, tone and accuracy.");
-}
-
-/* ---------- buttons ---------- */
-
-async function copyResult() {
-  const text = $("output").value;
-  if (!text.trim()) {
-    setStatus("There is no result to copy yet.");
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(text);
-    setStatus("Result copied to clipboard.");
-  } catch (error) {
-    $("output").focus();
-    $("output").select();
-    const copied = document.execCommand("copy");
-    setStatus(copied ? "Result copied." : "Select the result and copy it manually.");
-  }
-}
-
-function useAsInput() {
-  if (!$("output").value.trim()) {
-    setStatus("Generate a result first.");
-    return;
-  }
-
-  $("input").value = $("output").value;
-  $("output").value = "";
-  $("changes").textContent = "0";
-  $("beforeWords").textContent = wordCount($("input").value);
-  $("afterWords").textContent = "0";
-  updateCounts();
-  setStatus("Result moved to the input. You can edit it again.");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function clearAll() {
-  $("input").value = "";
-  $("output").value = "";
-  $("changes").textContent = "0";
-  $("beforeWords").textContent = "0";
-  $("afterWords").textContent = "0";
-  updateCounts();
-  setStatus("All text cleared.");
-}
-
-function loadSample() {
-  $("input").value =
-    "In today's fast-paced world, it is important to note that education plays a crucial role in the development of children. Furthermore, teachers need to utilize effective methods in order to facilitate learning. In conclusion, a wide range of strategies can help improve classroom learning.";
-  updateCounts();
-  setStatus("Sample loaded. Select a style and improve the writing.");
-}
-
-function downloadResult() {
-  const text = $("output").value;
-  if (!text.trim()) {
-    setStatus("There is no result to save yet.");
-    return;
-  }
-
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "dumbohumanizer-result.txt";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-  setStatus("Text file prepared for saving.");
-}
-
-/* ---------- wire up events ---------- */
-
-$("rewriteBtn").addEventListener("click", rewriteText);
-$("sampleBtn").addEventListener("click", loadSample);
-$("clearBtn").addEventListener("click", clearAll);
-$("copyBtn").addEventListener("click", copyResult);
-$("againBtn").addEventListener("click", useAsInput);
-$("saveBtn").addEventListener("click", downloadResult);
-$("input").addEventListener("input", updateCounts);
-$("output").addEventListener("input", updateCounts);
-</script>
-</body>
-</html>
+  [/\bin addition to this\b/gi,
